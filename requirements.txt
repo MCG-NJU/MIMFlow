@@ -1,0 +1,18 @@
+numpy==1.26.4
+wandb
+swanlab
+tqdm
+accelerate
+lightning==2.5.5
+lightning[pytorch-extra]
+diffusers==0.35.2
+fsspec[http]>=2025.5.0
+timm
+transformers==4.56.1
+huggingface-hub==0.34.4
+peft
+
+# Optional only for legacy in-repo metric utilities. The released evaluation
+# path uses the ADM guided-diffusion evaluator instead.
+# torch-fidelity==0.3.0
+# torchmetrics==1.6.0

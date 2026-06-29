@@ -1,0 +1,139 @@
+seed_everything: 100
+tags:
+  exp: &exp mimflow-l-samples
+  std: &std 0.3
+
+trainer:
+  default_root_dir: workdirs
+  accelerator: auto
+  strategy: ddp_find_unused_parameters_true
+  devices: auto
+  num_nodes: 1
+  precision: bf16-mixed
+  logger: false
+  callbacks:
+    - class_path: src.callbacks.save_images.SaveImagesHook
+      init_args:
+        save_dir: val
+        max_save_num: null
+        compressed: true
+        save_pngs: false
+  limit_val_batches: null
+  log_every_n_steps: 50
+  inference_mode: false
+  use_distributed_sampler: true
+  enable_progress_bar: true
+  sync_batchnorm: false
+
+model:
+  vae:
+    class_path: src.models.maetok.tokenizer.MaskAE_16
+    init_args:
+      image_size: 256
+      base_image_size: 256
+      codebook_embed_dim: &dim 64
+      num_latent_tokens: &seq_len 128
+      enc_type: vit
+      dec_type: vit
+      encoder_model: vit_base_patch14_dinov2.lvd142m
+      decoder_model: vit_base_patch14_dinov2.lvd142m
+      enc_patch_size: 16
+      dec_patch_size: 16
+      enc_drop_path_rate: 0.0
+      dec_drop_path_rate: 0.05
+      dec_cls_token: true
+      use_ape: false
+      use_rope: true
+      rope_mixed: true
+      rope_theta: 10.0
+      repa: true
+      repa_model: vit_base_patch14_dinov2.lvd142m
+      repa_patch_size: 16
+      repa_proj_dim: 1024
+      repa_align: repeat
+      dec_repa_block: null
+      aux_loss_mask: true
+      aux_dec_model: vit_tinytiny_patch14_dinov2_movq2
+      aux_dec_cls_token: false
+      aux_hog_dec: false
+      aux_dino_dec: false
+      aux_clip_dec: false
+      enc_token_drop: 0.4
+      enc_token_drop_max: 0.6
+      enc_no_mask_prob: 0.0
+  model:
+    class_path: src.models.tarflow_1d.Model1D
+    init_args:
+      token_dim: *dim
+      seq_len: *seq_len
+      channels: 1024
+      layers_per_block: [2, 2, 2, 2, 2, 2, 2, 20]
+      nvp: true
+      num_classes: 1000
+      head_dim: 64
+      use_normalize: false
+      pos_encoding: learnable
+  metric: null
+  recon_metric: null
+  nf_trainer:
+    class_path: src.trainer.maetok_nf_trainer.MAETokNFTrainer
+    init_args:
+      noise_mode: add
+      null_condition_p: 0.1
+      noise_std: *std
+      use_gan_loss: false
+      quantize_mode: nf
+      gamma: 1.0
+      masked_token_weight: 1.0
+  ema_tracker:
+    class_path: src.callbacks.simple_ema.SimpleEMA
+    init_args:
+      decay: 0.9999
+      every_n_steps: 1
+      eval_original_model: false
+  optimizer:
+    class_path: torch.optim.AdamW
+    init_args:
+      lr: 0.0001
+      betas: [0.9, 0.95]
+      eps: 1.0e-08
+      weight_decay: 0.0001
+  lr_scheduler: null
+  precompute_metric_data: null
+  precompute_recon_metric_data: null
+  cfg: 2.0
+  denoising_lr: 0.0
+  interval_guidance: 0.25
+  save_val_images: false
+  train_vae: true
+  train_model: true
+  compute_val_recon: false
+  compute_test_acc: false
+  denoising_mode: flow
+  engine_denoising_chunk_size: 16
+  mask_strategy: random
+  mask_ratio: 0.5
+  fixed_mask_seed: 100
+
+data:
+  data_root: data/imagenet
+  cache_folder: train_256latent
+  test_nature_root: null
+  test_gen_root: null
+  train_image_size: 256
+  dino_image_size: 0
+  train_batch_size: 32
+  train_num_workers: 8
+  train_prefetch_factor: 2
+  train_dataset: pix_imagenet
+  eval_batch_size: 128
+  eval_num_workers: 4
+  eval_max_num_instances: 50000
+  val_recon: false
+  pred_batch_size: 128
+  pred_num_workers: 4
+  pred_seeds: null
+  num_classes: 1000
+  latent_shape: [*seq_len, *dim]
+
+ckpt_path: null
