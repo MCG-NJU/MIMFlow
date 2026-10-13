@@ -12,7 +12,6 @@ outputs
 data/
 datasets/
 checkpoints/
-models/
 *.ckpt
 *.pt
 *.pth
