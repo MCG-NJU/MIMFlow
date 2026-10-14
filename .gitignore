@@ -9,7 +9,6 @@ lightning_logs
 work_dirs
 workdirs/
 outputs
-data/
 datasets/
 checkpoints/
 *.ckpt
